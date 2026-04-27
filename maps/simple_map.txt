@@ -1,0 +1,10 @@
+nb_drones: 4
+start_hub: base 0 0 [color=green]
+end_hub: goal 10 10 [color=red]
+
+hub: relay1 5 5 [zone=normal color=blue]
+hub: danger_zone 7 7 [zone=restricted max_drones=2]
+
+connection: base-relay1
+connection: relay1-danger_zone [max_link_capacity=2]
+connection: danger_zone-goal
