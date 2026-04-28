@@ -1,0 +1,15 @@
+[tool.poetry]
+package-mode = false 
+name = "Fly_in"
+version = "0.0.1"
+description = "A Drone program that shows drons paths"
+authors = ["mamonzer@student.42heilbronn.de"]
+
+[tool.poetry.dependecies]
+python = "^3.10"
+
+
+
+
+[build-system]
+requires = ["poetry-core=1.0.0"]
