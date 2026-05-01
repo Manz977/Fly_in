@@ -160,5 +160,5 @@ class Network:
             ValueError: If the end zone is already defined.
         """
         if self.end_zone is not None:
-            raise ValueError("Start zone already defined")
+            raise ValueError("End zone already defined")
         self.end_zone = zone
