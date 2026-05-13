@@ -1,5 +1,5 @@
 from typing import Optional, Dict
-from models import Network, Zone, Connection
+from .models import Network, Zone, Connection
 from pathlib import Path
 import re
 

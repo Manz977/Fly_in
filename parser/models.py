@@ -90,7 +90,9 @@ class Network:
     def __init__(self, nb_drones: int)-> None:
         """
         Initialize a network with a fixed number of drones.
-
+        Also, we are using adjacency list, bc it uses dict
+        which the zone is the key and the values are the
+        connections it has.
         Args:
             nb_drones (int): Total number of drones in the network.
 
@@ -102,6 +104,7 @@ class Network:
         self.nb_drones = nb_drones
         self.zones = {}
         self.connection = []
+        self.adj_list: dict[str, list[Zone]] = {}
         self.start_zone: Optional[Zone] = None
         self.end_zone: Optional[Zone] = None
 
@@ -118,6 +121,7 @@ class Network:
         if zone.name in self.zones:
             raise ValueError(f"Duplicate {zone.name} detected")
         self.zones[zone.name] = zone
+        self.adj_list[zone.name] = []
 
     def add_connection(self, connection: Connection) -> None:
         """
@@ -133,7 +137,11 @@ class Network:
             if same_connection(existing_conn, connection):
                 raise ValueError("duplicate found for connections")
         self.connection.append(connection)
+        z1_name = connection.zone1.name
+        z2_name = connection.zone2.name
 
+        self.adj_list[z1_name].append(connection.zone2)
+        self.adj_list[z2_name].append(connection.zone1)
 
     def set_start(self, zone: Zone) -> None:
         """
