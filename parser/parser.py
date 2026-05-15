@@ -3,9 +3,10 @@ from .models import Network, Zone, Connection
 from pathlib import Path
 import re
 
+
 BASE_DIR = Path(__file__).resolve().parent
 path_to_the_file = (
-    BASE_DIR.parent / "maps" / "challenger" / "01_the_impossible_dream.txt"
+    BASE_DIR.parent / "maps" / "easy" / "01_linear_path.txt"
 )
 
 
@@ -31,8 +32,8 @@ class MapParser:
         self, hub_type: str, stripped_line: str, line_num: int
     ) -> None:
         pattern = (
-            rf"{hub_type}\s+(\w+)\s+(\d+)\s+(\d+)\s*(?:\[([^\]]*)\])?"
-        )
+            rf"{hub_type}:\s+(\w+)\s+(\d+)\s+(\d+)\s*(?:\[([^\]]*)\])?"
+            )
         match = re.search(pattern, stripped_line)
         if match:
             name = match.group(1)
@@ -75,6 +76,7 @@ class MapParser:
                     end_hub = Zone(
                         name, val1, val2, zone_type, max_drones, color
                     )
+                    self.network.add_zone(end_hub)
                     self.network.set_end(end_hub)
                     self.zones[name] = end_hub
 
@@ -131,6 +133,15 @@ class MapParser:
                         raise ValueError(msg)
                     continue
 
+                if stripped.startswith("start_hub:"):
+                    self._parse_hub("start_hub", stripped, line_num)
+                    continue
+                elif stripped.startswith("end_hub:"):
+                    self._parse_hub("end_hub", stripped, line_num)
+                    continue
+                elif stripped.startswith("hub:"):
+                    self._parse_hub("hub", stripped, line_num)
+                    continue
                 if stripped.startswith("connection:"):
                     connections = r"connection:\s+([\w-]+)\s*(?:\[([^\]]*)\])?"
                     match = re.search(connections, stripped)
@@ -138,7 +149,6 @@ class MapParser:
                         raw_id = match.group(1)
                         metadata_str = match.group(2)
                         val1, val2 = raw_id.split("-")
-
                         zone1 = self.zones.get(val1)
                         zone2 = self.zones.get(val2)
 
@@ -157,21 +167,14 @@ class MapParser:
                             new_conn = Connection(zone1, zone2, capacity)
                             self.network.add_connection(new_conn)
                         else:
+                            print(f"DEBUG: Looking for {val1}, {val2}")
+                            zones_list = list(self.zones.keys())
+                            print(f"DEBUG: Available zones: {zones_list}")
                             msg = (
                                 f"Line {line_num}: Connection refers to "
                                 "unknown zones"
                             )
                             raise ValueError(msg)
-                    continue
-
-                if stripped.startswith("start_hub:"):
-                    self._parse_hub("start_hub", stripped, line_num)
-                    continue
-                elif stripped.startswith("end_hub:"):
-                    self._parse_hub("end_hub", stripped, line_num)
-                    continue
-                elif stripped.startswith("hub:"):
-                    self._parse_hub("hub", stripped, line_num)
                     continue
 
         if self.network is None:

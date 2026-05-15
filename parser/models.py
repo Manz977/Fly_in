@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+
 class Zone:
     """
     Represents the hub in the drone network.
@@ -12,14 +13,21 @@ class Zone:
         max_drones (int): Maximum occupancy capacity.
         color (str): Vsual representation color.
     """
-    def __init__(self,
-                 name: str,
-                 x: int,
-                 y: int,
-                 zone_type: str= "normal",
-                 max_drones: int= 1,
-                 color: str= "none" ) -> None:
-        allowed_zones: List[str] = ["normal", "blocked", "restricted", "priority"]
+    def __init__(
+        self,
+        name: str,
+        x: int,
+        y: int,
+        zone_type: str = "normal",
+        max_drones: int = 1,
+        color: str = "none",
+    ) -> None:
+        allowed_zones: List[str] = [
+            "normal",
+            "blocked",
+            "restricted",
+            "priority",
+        ]
         if zone_type not in allowed_zones:
             raise ValueError(f"Invalid zone type: {zone_type}")
         if max_drones < 1:
@@ -42,7 +50,12 @@ class Connection:
         zone2 Zone: The second endpoint zone.
         max_link_capacity int: Maximum number of drones allowed on the link.
     """
-    def __init__(self, zone1: Zone, zone2: Zone, max_link_capacity: int = 1) -> None:
+    def __init__(
+        self,
+        zone1: Zone,
+        zone2: Zone,
+        max_link_capacity: int = 1,
+    ) -> None:
         """
         Initialize a connection between two zones with a capacity constraint.
 
@@ -56,11 +69,14 @@ class Connection:
             ValueError: If `max_link_capacity` is less than 1.
         """
         if max_link_capacity < 1:
-            raise ValueError("max link capacity must be positive integer")
+            raise ValueError(
+                "max link capacity must be positive integer"
+            )
 
         self.zone1 = zone1
         self.zone2 = zone2
         self.max_link_capacity = max_link_capacity
+
 
 def same_connection(a: Connection, b: Connection) -> bool:
     """
@@ -76,6 +92,7 @@ def same_connection(a: Connection, b: Connection) -> bool:
     """
     return {a.zone1, a.zone2} == {b.zone1, b.zone2}
 
+
 class Network:
     """
     Represents a drone delivery network with zones and connections.
@@ -87,7 +104,7 @@ class Network:
         start_zone (Optional[Zone]): Designated start zone.
         end_zone (Optional[Zone]): Designated end zone.
     """
-    def __init__(self, nb_drones: int)-> None:
+    def __init__(self, nb_drones: int) -> None:
         """
         Initialize a network with a fixed number of drones.
         Also, we are using adjacency list, bc it uses dict

@@ -1,46 +1,70 @@
 from parser.models import Network, Zone
-from typing import List
-import  heapq
+from typing import List, Optional
+import heapq
 
-"""
-    1. Initialize:
-   - distances = { all zones: infinity }
-   - distances[start] = 0
-   - parent = { all zones: None }  // Track where we came from
-   - visited = empty set
-   - priority_queue = [(0, start)]
 
-2. While priority_queue is not empty:
-   a. Pop zone with smallest distance
-   b. If already visited, skip
-   c. Mark as visited
-   d. For each neighbor of this zone:
-      - Calculate new distance = distances[current] + cost_to_neighbor
-      - If new distance < distances[neighbor]:
-        - Update distances[neighbor]
-        - Update parent[neighbor] = current  // Remember we came from current
-        - Add (new_distance, neighbor) to priority_queue
-
-3. After loop:
-   - Start at end zone
-   - Follow parent pointers back to start
-   - Reverse to get path from start to end
-   - Return path
-
-    """
 class PathFinder:
-    def find_shortest_path(self, start, end, network) -> List:
+
+    def find_shortest_path(
+        self, start: Zone, end: Zone, network: Network
+    ) -> List[str]:
         # Stores the current known distance to each zone
-        distances = {name: float('inf') for name in network.zones}
-        distances[start] = 0
-        parent = {name: None for name in network.zones}
+        if start is None or end is None:
+            raise ValueError("Start and end zones cannot be None")
+        if network is None:
+            raise ValueError("Network cannot be None")
+        if start.name == end.name:
+            return [start.name]
+        distances = {
+            name: float('inf') for name in network.zones
+        }
+        distances[start.name] = 0
+        parent: dict[str, Optional[str]] = {
+            name: None for name in network.zones
+        }
+        parent[start.name] = None
         visited = set()
         # Stores zones waiting to be explored
-        priority_queue = [(0, start)]
+        priority_queue = [(0.0, start.name)]
 
         while priority_queue:
             distance, current_zone = heapq.heappop(priority_queue)
             if current_zone in visited:
                 continue
             visited.add(current_zone)
+            for connection in network.connection:
+                if connection.zone1.name == current_zone:
+                    neighbor = connection.zone2
+                elif connection.zone2.name == current_zone:
+                    neighbor = connection.zone1
+                else:
+                    continue
 
+                zone_cost = {
+                    "normal": 1,
+                    "blocked": 0,
+                    "restricted": 2,
+                    "priority": 1,
+                }
+                new_distance = (
+                    distances[current_zone]
+                    + zone_cost[neighbor.zone_type]
+                )
+                if new_distance < distances[neighbor.name]:
+                    distances[neighbor.name] = new_distance
+                    parent[neighbor.name] = current_zone
+                    heapq.heappush(
+                        priority_queue, (new_distance, neighbor.name)
+                    )
+                    if end.name not in visited:
+                        raise ValueError(
+                            f"No path exists from {start.name} to {end.name}"
+                        )
+
+        path = []
+        current = end.name
+        while current is not None:
+            path.append(current)
+            current = parent[current]
+        path.reverse()
+        return path
