@@ -56,10 +56,11 @@ class PathFinder:
                     heapq.heappush(
                         priority_queue, (new_distance, neighbor.name)
                     )
-                    if end.name not in visited:
-                        raise ValueError(
-                            f"No path exists from {start.name} to {end.name}"
-                        )
+
+        if end.name not in visited:
+            raise ValueError(
+                f"No path exists from {start.name} to {end.name}"
+            )
 
         path = []
         current = end.name

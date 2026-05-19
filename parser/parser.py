@@ -6,7 +6,7 @@ import re
 
 BASE_DIR = Path(__file__).resolve().parent
 path_to_the_file = (
-    BASE_DIR.parent / "maps" / "easy" / "01_linear_path.txt"
+    BASE_DIR.parent / "maps" / "hard" / "01_maze_nightmare.txt"
 )
 
 
