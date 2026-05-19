@@ -32,7 +32,7 @@ class MapParser:
         self, hub_type: str, stripped_line: str, line_num: int
     ) -> None:
         pattern = (
-            rf"{hub_type}:\s+(\w+)\s+(\d+)\s+(\d+)\s*(?:\[([^\]]*)\])?"
+            rf"{hub_type}:\s+(\w+)\s+(-?\d+)\s+(-?\d+)\s*(?:\[([^\]]*)\])?"
             )
         match = re.search(pattern, stripped_line)
         if match:
@@ -94,7 +94,6 @@ class MapParser:
                     )
                     self.network.add_zone(new_hub)
                     self.zones[name] = new_hub
-
                 except ValueError:
                     msg = f"Line {line_num}: Coordinates must be integers"
                     raise ValueError(msg)

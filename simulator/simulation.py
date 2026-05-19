@@ -51,3 +51,45 @@ class Simulator:
             self.drones.append(drone)
         self.zone_occupancy[network.start_zone.name] = network.nb_drones
 
+    def simulate_turn(self) -> None:
+        for key in self.link_occupancy:
+            self.link_occupancy[key] = 0
+        movements = []
+        for drone in self.drones:
+            next_zone = drone.get_next_position()
+            current_zone = drone.get_current_position()
+            if next_zone is None:
+                if self.zone_occupancy[current_zone] > 0:
+                    self.zone_occupancy[current_zone] -= 1
+                continue
+            max_zone_capacity = self.network.zones[next_zone].max_drones
+            connection_key = tuple(sorted([current_zone, next_zone]))
+            connection = self.connection_map.get(connection_key)
+            if connection is None:
+                continue
+            max_link_capacity = connection.max_link_capacity
+            if self.zone_occupancy[next_zone] < max_zone_capacity and self.link_occupancy[connection_key] < max_link_capacity:
+                drone.move()
+                self.zone_occupancy[next_zone] += 1
+                self.zone_occupancy[current_zone] -= 1
+                self.link_occupancy[connection_key] += 1
+                movements.append(f"D{drone.id}-{next_zone}")
+        if movements:
+            print(" ".join(movements))
+
+    def all_drones_finished(self) -> bool:
+        for drone in self.drones:
+            if drone.get_next_position() is not None:
+                return False
+        return True
+
+    def run_simulation(self) -> int:
+        turn_counter = 0
+
+
+        while not self.all_drones_finished() and turn_counter < MAX_TURNS:
+            self.simulate_turn()
+            turn_counter += 1
+        if turn_counter >= MAX_TURNS:
+            print(f"Warning: Simulation exceeded {MAX_TURNS} turns. Possible deadlock")
+        return turn_counter

@@ -42,7 +42,7 @@ class PathFinder:
 
                 zone_cost = {
                     "normal": 1,
-                    "blocked": 0,
+                    "blocked": float('inf'),
                     "restricted": 2,
                     "priority": 1,
                 }
