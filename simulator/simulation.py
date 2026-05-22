@@ -38,7 +38,8 @@ class Simulator:
         self.drones = []
         self.link_occupancy = {}
         self.connection_map = {}
-
+        self.turn_history = []
+        self.current_turn = 0
         for connection in network.connection:
             key = tuple(sorted([connection.zone1.name, connection.zone2.name]))
             self.link_occupancy[key] = 0
@@ -51,7 +52,7 @@ class Simulator:
             self.drones.append(drone)
         self.zone_occupancy[network.start_zone.name] = network.nb_drones
 
-    def simulate_turn(self) -> None:
+    def simulate_turn(self, visual_mode=False) -> None:
         for key in self.link_occupancy:
             self.link_occupancy[key] = 0
         movements = []
@@ -74,22 +75,30 @@ class Simulator:
                 self.zone_occupancy[current_zone] -= 1
                 self.link_occupancy[connection_key] += 1
                 movements.append(f"D{drone.id}-{next_zone}")
-        if movements:
+        if movements and not visual_mode:
             print(" ".join(movements))
-
+        turn_state = {
+            'turn_number': self.current_turn,
+            'drone_positions': {drone.id: drone.current_position for drone in self.drones},
+            'zone_occupancy': dict(self.zone_occupancy),
+            'movements': movements.copy()
+        }
+        self.turn_history.append(turn_state)
+        self.current_turn += 1
     def all_drones_finished(self) -> bool:
         for drone in self.drones:
             if drone.get_next_position() is not None:
                 return False
         return True
 
-    def run_simulation(self) -> int:
+    def run_simulation(self, visual_mode=False) -> int:
         turn_counter = 0
 
 
         while not self.all_drones_finished() and turn_counter < MAX_TURNS:
-            self.simulate_turn()
+            self.simulate_turn(visual_mode)
             turn_counter += 1
-        if turn_counter >= MAX_TURNS:
-            print(f"Warning: Simulation exceeded {MAX_TURNS} turns. Possible deadlock")
+        if not visual_mode:
+            if turn_counter >= MAX_TURNS:
+                print(f"Warning: Simulation exceeded {MAX_TURNS} turns. Possible deadlock")
         return turn_counter
