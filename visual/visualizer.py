@@ -1,5 +1,4 @@
 import pygame
-import sys
 from typing import Dict, List, Tuple
 from parser import Network
 
@@ -18,6 +17,7 @@ ZONE_COLORS = {
     'restricted': YELLOW,
     'priority': GREEN
 }
+
 
 class Visualizer:
     def __init__(self, network: Network, turn_history: List[Dict]) -> None:
@@ -91,3 +91,62 @@ class Visualizer:
                 raise ValueError(f"Error processing zone {zone_name}: {e}")
 
         return positions
+
+    def run(self):
+        self._show_instructions()
+
+        while self.running:
+            self._handle_events()
+            self._draw()
+            self.clock.tick(60)
+        pygame.quit()
+
+    def _handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RIGHT:
+                    if self.current_turn_index < len(self.turn_history) - 1:
+                        self.current_turn_index += 1
+                elif event.key == pygame.K_LEFT:
+                    if self.current_turn_index > 0:
+                        self.current_turn_index -= 1
+                elif event.key == pygame.K_ESCAPE:
+                    self.running = False
+
+    def _draw_connections(self):
+        for connection in self.network.connection:
+            zone1_name = connection.zone1.name
+            zone2_name = connection.zone2.name
+
+            pos1 = self.zone_positions[zone1_name]
+            pos2 = self.zone_positions[zone2_name]
+
+            pygame.draw.line(self.screen, GRAY, pos1, pos2)
+
+    def _draw_zones(self):
+        for zone_name, zone in self.network.zones.items():
+            pos = self.zone_positions[zone_name]
+            color = ZONE_COLORS.get(zone.zone_type, BLUE)
+
+            pygame.draw.circle(self.screen, color, pos, self.zone_radius)
+
+            text = self.font.render(zone_name, True, BLACK)
+            text_rect = text.get_rect(center=pos)
+            self.screen.blit(text, text_rect)
+
+    def _draw_drones(self):
+        if self.current_turn_index >= len(self.turn_history):
+            return
+
+        current_state = self.turn_history[self.current_turn_index]
+        drone_positions = current_state['drone_positions']
+
+        for drone_id, zone_name in drone_positions.items():
+            zone_pos = self.zone_positions[zone_name]
+            pygame.draw.circle(self.screen, RED, zone_pos, 10)
+
+            text = self.small_font.render(f"D{drone_id}", True, WHITE)
+            text_rect = text.get_rect(center=zone_pos)
+            self.screen.blit(text, text_rect)
