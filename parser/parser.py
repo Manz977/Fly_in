@@ -11,13 +11,55 @@ path_to_the_file = (
 
 
 class MapParser:
+    """Parse a ``.txt`` map file into a ``Network`` object.
+
+    Map files follow a custom line-oriented format::
+
+        nb_drones: <count>
+        start_hub: <name> <x> <y> [key=value ...]
+        end_hub:   <name> <x> <y> [key=value ...]
+        hub:       <name> <x> <y> [key=value ...]
+        connection: <name1>-<name2> [key=value ...]
+
+    Lines beginning with ``#`` are treated as comments and skipped, with
+    the special exception that ``#start_hub:`` lines have their leading
+    ``#`` stripped before parsing (used in some map files to mark the start
+    hub inline with a comment prefix).
+
+    Attributes:
+        path (Path): Absolute path to the map file.
+        network (Optional[Network]): The network built during parsing.
+            ``None`` until ``parse()`` is called.
+        zones (Dict[str, Zone]): Running registry of parsed zones, used to
+            resolve zone references in ``connection:`` lines.
+    """
 
     def __init__(self, path: Path) -> None:
+        """Initialise the parser with the path to a map file.
+
+        Args:
+            path (Path): Path to the ``.txt`` map file to parse.
+        """
         self.path = path
         self.network: Optional[Network] = None
         self.zones: Dict[str, Zone] = {}
 
     def _parse_metadata(self, metadata_string: str) -> Dict[str, str]:
+        """Parse a bracket-enclosed metadata string into a key/value dict.
+
+        Metadata is encoded as space-separated ``key=value`` pairs that
+        appear inside ``[...]`` in hub and connection lines, e.g.::
+
+            [zone=restricted max_drones=3 color=red]
+
+        Args:
+            metadata_string (str): The raw content between ``[`` and ``]``,
+                or ``None`` if the bracket section was absent.
+
+        Returns:
+            Dict[str, str]: Mapping of metadata keys to their string values.
+                Returns an empty dict if ``metadata_string`` is ``None``.
+        """
         if metadata_string is None:
             return {}
         datas = metadata_string.split()
@@ -31,6 +73,29 @@ class MapParser:
     def _parse_hub(
         self, hub_type: str, stripped_line: str, line_num: int
     ) -> None:
+        """Parse a single hub line and register the resulting zone.
+
+        Handles the three hub keywords – ``start_hub``, ``end_hub``, and
+        ``hub`` – using a shared regex pattern.  The resulting ``Zone``
+        object is added to ``self.network`` and, when appropriate, set as
+        the network's start or end zone.
+
+        Expected line format::
+
+            <hub_type>: <name> <x> <y> [key=value ...]
+
+        Args:
+            hub_type (str): One of ``"start_hub"``, ``"end_hub"``, or
+                ``"hub"``.
+            stripped_line (str): The full (already stripped) source line.
+            line_num (int): 1-based line number used in error messages.
+
+        Raises:
+            ValueError: If ``self.network`` has not been initialised yet
+                (i.e. the ``nb_drones:`` line has not been parsed).
+            ValueError: If the coordinate values cannot be parsed as
+                integers.
+        """
         pattern = (
             rf"{hub_type}:\s+(\w+)\s+(-?\d+)\s+(-?\d+)\s*(?:\[([^\]]*)\])?"
             )
@@ -69,7 +134,7 @@ class MapParser:
 
             elif hub_type == "end_hub":
                 if self.network is None:
-                    msg = "Found an end_hub befoe defining nb_drones"
+                    msg = "Found an end_hub before defining nb_drones"
                     raise ValueError(msg)
 
                 try:
@@ -86,7 +151,7 @@ class MapParser:
 
             elif hub_type == "hub":
                 if self.network is None:
-                    msg = "Found an end_hub befoe defining nb_drones"
+                    msg = "Found a hub before defining nb_drones"
                     raise ValueError(msg)
                 try:
                     new_hub = Zone(
@@ -98,15 +163,35 @@ class MapParser:
                     msg = f"Line {line_num}: Coordinates must be integers"
                     raise ValueError(msg)
 
-    def parse(self):
+    def parse(self) -> Network:
+        """Parse the map file and return the fully constructed ``Network``.
+
+        Reads the file line by line, skipping blank lines and comments
+        (``#``), and dispatches each directive to the appropriate handler.
+        The method is single-use per instance; calling it a second time
+        raises a ``RuntimeError``.
+
+        Returns:
+            Network: The populated network with all zones, connections,
+                start zone, and end zone set.
+
+        Raises:
+            RuntimeError: If ``parse()`` has already been called on this
+                instance.
+            ValueError: If the file is empty or does not begin with an
+                ``nb_drones:`` directive.
+            ValueError: If any line contains malformed data (bad zone types,
+                unknown zone references in connections, etc.).
+        """
         if self.network is not None:
-            msg = "Network has already been parsed fpr this instance!"
+            msg = "Network has already been parsed for this instance!"
             raise RuntimeError(msg)
         with open(self.path, "r") as file:
             for line_num, line in enumerate(file, 1):
                 stripped = line.strip()
                 if not stripped:
                     continue
+                # Some map files prefix start_hub with '#' as a visual marker.
                 if stripped.startswith("#start_hub:"):
                     stripped = stripped[1:]
                 elif stripped.startswith("#"):

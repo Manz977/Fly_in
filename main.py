@@ -3,6 +3,8 @@ from parser.parser import MapParser
 from algorithm.algorithm import PathFinder
 from pathlib import Path
 from simulator import Simulator
+from visual import Visualizer
+
 if len(sys.argv) > 1:
     path_to_the_file = Path(sys.argv[1])
 else:
@@ -11,15 +13,15 @@ else:
 
 parser = MapParser(path_to_the_file)
 network = parser.parse()
-pathfinder = PathFinder()
-#if network.start_zone is None or network.end_zone is None:
-#    raise ValueError("Network must have start and end zones")
-#path = pathfinder.find_shortest_path(
-#    network.start_zone,
-#    network.end_zone,
-#    network
-#)
+if network.start_zone is None or network.end_zone is None:
+    raise ValueError("Network must have start and end zones")
 
+
+pathfinder = PathFinder()
 simulator = Simulator(network, pathfinder)
-turns = simulator.run_simulation()
+turns = simulator.run_simulation(visual_mode=True)
+
+visualizer = Visualizer(network, simulator.turn_history)
+
+visualizer.run()
 print(f"\nSimulation completed in {turns} Turns")
