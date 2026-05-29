@@ -1,6 +1,7 @@
 from algorithm.algorithm import PathFinder
+from collections import Counter
 from parser import Zone, Network
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 
 
 MAX_TURNS = 100
@@ -35,6 +36,7 @@ class Drone:
         self.current_position = start_zone.name
         self.path = path
         self.current_index = 0
+        self.in_restricted_zone: bool = start_zone.zone_type == "restricted"
 
     def get_current_position(self) -> str:
         """Return the name of the zone the drone currently occupies.
@@ -130,29 +132,39 @@ class Simulator:
             self.drones.append(drone)
         self.zone_occupancy[network.start_zone.name] = network.nb_drones
 
-    def simulate_turn(self, visual_mode: bool = False) -> None:
-        """Advance the simulation by one turn.
+    def simulate_turn(self, visual_mode: bool = False) -> int:
+        """Advance the simulation by one turn and return its turn cost.
 
         For each drone that has not yet reached the end zone, the method
         attempts a move to the next zone on the drone's path.  A move
         succeeds only when both the destination zone and the connecting link
-        have remaining capacity.  Successfully moved drones update the
-        occupancy counters accordingly.
+        have remaining capacity.  Drones currently inside a restricted zone
+        bypass capacity checks and are forced to exit immediately.
 
         A snapshot of all drone positions, zone occupancy, and movement
         events is appended to ``turn_history`` regardless of whether any
-        drones moved.
+        drones moved.  When ``visual_mode`` is ``False``, a per-turn debug
+        summary is printed listing blocked drones and bottleneck zones.
 
         Args:
             visual_mode (bool, optional): When ``True``, movement events
                 are not printed to stdout (the visualiser handles display
                 instead).  Defaults to ``False``.
+
+        Returns:
+            int: Turn cost — ``2`` if any drone entered a restricted zone
+                this turn (the forced-exit turn is already priced in),
+                ``1`` otherwise.
         """
-        # Reset per-turn link usage before computing new movements.
+
         for key in self.link_occupancy:
             self.link_occupancy[key] = 0
 
-        movements = []
+        movements: List[str] = []
+        entered_restricted = False
+        # Each entry: (drone_id, next_zone_name, reason)
+        waiting: List[Tuple[int, str, str]] = []
+
         for drone in self.drones:
             next_zone = drone.get_next_position()
             current_zone = drone.get_current_position()
@@ -162,35 +174,76 @@ class Simulator:
                     self.zone_occupancy[current_zone] -= 1
                 continue
 
-            max_zone_capacity = self.network.zones[next_zone].max_drones
             connection_key = tuple(sorted([current_zone, next_zone]))
             connection = self.connection_map.get(connection_key)
             if connection is None:
+                waiting.append((drone.id, next_zone, "no_connection"))
                 continue
 
-            max_link_capacity = connection.max_link_capacity
-            link_ok = self.link_occupancy[connection_key] < max_link_capacity
-            if (self.zone_occupancy[next_zone] < max_zone_capacity
-                    and link_ok):
+            if drone.in_restricted_zone:
+                drone.in_restricted_zone = False
                 drone.move()
                 self.zone_occupancy[next_zone] += 1
                 self.zone_occupancy[current_zone] -= 1
                 self.link_occupancy[connection_key] += 1
                 movements.append(f"D{drone.id}-{next_zone}")
+                if self.network.zones[next_zone].zone_type == "restricted":
+                    drone.in_restricted_zone = True
+                    entered_restricted = True
+                continue
 
-        if movements and not visual_mode:
-            print(" ".join(movements))
+            max_zone_capacity = self.network.zones[next_zone].max_drones
+            max_link_capacity = connection.max_link_capacity
+            zone_ok = self.zone_occupancy[next_zone] < max_zone_capacity
+            link_ok = self.link_occupancy[connection_key] < max_link_capacity
 
-        turn_state = {
-            'turn_number': self.current_turn,
+            moved = False
+            if zone_ok and link_ok:
+                drone.move()
+                self.zone_occupancy[next_zone] += 1
+                self.zone_occupancy[current_zone] -= 1
+                self.link_occupancy[connection_key] += 1
+                movements.append(f"D{drone.id}-{next_zone}")
+                if self.network.zones[next_zone].zone_type == "restricted":
+                    drone.in_restricted_zone = True
+                    entered_restricted = True
+                moved = True
+
+            if not moved:
+                reason = "link_full" if zone_ok else "zone_full"
+                waiting.append((drone.id, next_zone, reason))
+
+        if not visual_mode:
+            if movements:
+                print(" ".join(movements))
+            if waiting:
+                wanted: Counter = Counter(nz for _, nz, _ in waiting)
+                top3 = wanted.most_common(3)
+                bottleneck_strs = ", ".join(
+                    f"{zone} ({self.zone_occupancy[zone]}/"
+                    f"{self.network.zones[zone].max_drones})"
+                    for zone, _ in top3
+                )
+                print(
+                    f"Turn {self.current_turn + 1}: {len(waiting)} drones waiting. "
+                    f"Bottlenecks: {bottleneck_strs}"
+                )
+
+        turn_cost = 2 if entered_restricted else 1
+        turn_state: Dict = {
+            'turn_number': self.current_turn + 1,
             'drone_positions': {
                 drone.id: drone.current_position for drone in self.drones
             },
             'zone_occupancy': dict(self.zone_occupancy),
-            'movements': movements.copy()
+            'movements': movements.copy(),
+            'turn_cost': turn_cost,
+            'waiting_drones': waiting.copy(),
         }
         self.turn_history.append(turn_state)
         self.current_turn += 1
+
+        return turn_cost
 
     def all_drones_finished(self) -> bool:
         """Return whether every drone has reached the end of its path.
@@ -206,25 +259,12 @@ class Simulator:
         return True
 
     def run_simulation(self, visual_mode: bool = False) -> int:
-        """Run the simulation until all drones finish or the turn limit is hit.
-
-        Calls ``simulate_turn()`` repeatedly until either
-        ``all_drones_finished()`` returns ``True`` or ``MAX_TURNS`` is
-        reached (a safety guard against deadlocks).
-
-        Args:
-            visual_mode (bool, optional): Passed through to
-                ``simulate_turn()``.  When ``True``, per-turn movement
-                output is suppressed.  Defaults to ``False``.
-
-        Returns:
-            int: Total number of turns executed.
-        """
+        """Run the simulation until all drones finish or the turn limit is hit."""
         turn_counter = 0
 
         while not self.all_drones_finished() and turn_counter < MAX_TURNS:
-            self.simulate_turn(visual_mode)
-            turn_counter += 1
+            turn_cost = self.simulate_turn(visual_mode)
+            turn_counter += turn_cost
 
         if not visual_mode:
             if turn_counter >= MAX_TURNS:
@@ -233,3 +273,4 @@ class Simulator:
                     "Possible deadlock"
                 )
         return turn_counter
+

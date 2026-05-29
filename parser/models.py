@@ -1,22 +1,13 @@
 from typing import List, Optional
 
-
 class Zone:
-    """A node in the drone delivery network (also called a hub).
-
-    Each zone occupies a coordinate in the network's 2-D space and has a
-    type that governs traversal cost and reachability.
+    """
+    A node in the drone delivery network (called a hub).
 
     Attributes:
         name (str): Unique identifier for the zone.
-        x (int): X-coordinate used for layout and visualisation.
-        y (int): Y-coordinate used for layout and visualisation.
-        zone_type (str): Traversal category – one of ``"normal"``,
-            ``"blocked"``, ``"restricted"``, or ``"priority"``.
-        max_drones (int): Maximum number of drones that may occupy this
-            zone simultaneously.
-        color (str): Optional display colour hint (e.g. ``"red"``).
-            Defaults to ``"none"`` when unspecified in the map file.
+        x: X coordinate used for layout and visualisation.
+        y: Y coordinate used for layout and visualisation.
     """
 
     def __init__(
@@ -28,24 +19,7 @@ class Zone:
         max_drones: int = 1,
         color: str = "none",
     ) -> None:
-        """Initialise a Zone and validate its type and capacity.
 
-        Args:
-            name (str): Unique identifier for this zone.
-            x (int): X-coordinate.
-            y (int): Y-coordinate.
-            zone_type (str, optional): One of ``"normal"``, ``"blocked"``,
-                ``"restricted"``, or ``"priority"``.  Defaults to
-                ``"normal"``.
-            max_drones (int, optional): Maximum simultaneous drone
-                occupancy.  Must be ≥ 1.  Defaults to ``1``.
-            color (str, optional): Visual colour hint.  Defaults to
-                ``"none"``.
-
-        Raises:
-            ValueError: If ``zone_type`` is not one of the allowed values.
-            ValueError: If ``max_drones`` is less than 1.
-        """
         allowed_zones: List[str] = [
             "normal",
             "blocked",
@@ -69,14 +43,9 @@ class Connection:
     """A bidirectional edge linking two zones in the network.
 
     Connections are symmetric: traffic may flow in either direction, but
-    the total simultaneous drone traffic on the link is bounded by
-    ``max_link_capacity``.
+    the total simultaneous drone traffic on the link is specified by
+    max_link_capacity.
 
-    Attributes:
-        zone1 (Zone): One endpoint of the connection.
-        zone2 (Zone): The other endpoint of the connection.
-        max_link_capacity (int): Maximum number of drones that may
-            traverse this link in a single simulation turn.
     """
 
     def __init__(
@@ -88,14 +57,10 @@ class Connection:
         """Initialise a connection between two zones with a capacity limit.
 
         Args:
-            zone1 (Zone): First endpoint zone.
-            zone2 (Zone): Second endpoint zone.
-            max_link_capacity (int, optional): Maximum number of drones
-                allowed to use this link per turn.  Must be ≥ 1.
-                Defaults to ``1``.
-
-        Raises:
-            ValueError: If ``max_link_capacity`` is less than 1.
+            zone1: First endpoint zone.
+            zone2: Second endpoint zone.
+            max_link_capacity: Maximum number of drones
+                allowed to use this link per turn. Must be greater then 1.
         """
         if max_link_capacity < 1:
             raise ValueError(
@@ -108,18 +73,12 @@ class Connection:
 
 
 def same_connection(a: Connection, b: Connection) -> bool:
-    """Return whether two connections link the same pair of zones.
+    """
+    Return whether two connections link the same pair of zones.
 
     The check is order-independent: a connection from zone A to zone B is
     considered the same as one from zone B to zone A.
 
-    Args:
-        a (Connection): First connection.
-        b (Connection): Second connection.
-
-    Returns:
-        bool: ``True`` if both connections share the same two endpoint
-            zones (regardless of direction); ``False`` otherwise.
     """
     return {a.zone1, a.zone2} == {b.zone1, b.zone2}
 
@@ -141,17 +100,8 @@ class Network:
     """
 
     def __init__(self, nb_drones: int) -> None:
-        """Initialise an empty network with a fixed drone fleet size.
-
-        The adjacency list representation (``adj_list``) is chosen because
-        it maps zone names to neighbour lists via a dict, giving O(1)
-        access to a zone's neighbours.
-
-        Args:
-            nb_drones (int): Total number of drones.  Must be ≥ 1.
-
-        Raises:
-            ValueError: If ``nb_drones`` is less than 1.
+        """
+        Initialise an empty network with a fixed drone fleet size.
         """
         if nb_drones < 1:
             raise ValueError("Number of drones should be a positive number")
@@ -163,10 +113,8 @@ class Network:
         self.end_zone: Optional[Zone] = None
 
     def add_zone(self, zone: Zone) -> None:
-        """Register a zone in the network.
-
-        Args:
-            zone (Zone): The zone to add.
+        """
+        Register a zone in the network.
 
         Raises:
             ValueError: If a zone with the same name already exists.
@@ -177,10 +125,8 @@ class Network:
         self.adj_list[zone.name] = []
 
     def add_connection(self, connection: Connection) -> None:
-        """Register a connection and update the adjacency list for both endpoints.
-
-        Args:
-            connection (Connection): The connection to add.
+        """
+        Register a connection and update the adjacency list for both endpoints.
 
         Raises:
             ValueError: If an identical connection (same pair of zones)
@@ -197,10 +143,8 @@ class Network:
         self.adj_list[z2_name].append(connection.zone1)
 
     def set_start(self, zone: Zone) -> None:
-        """Designate a zone as the network's start zone.
-
-        Args:
-            zone (Zone): Zone to mark as the start.
+        """
+        Designate a zone as the network's start zone.
 
         Raises:
             ValueError: If a start zone has already been set.
@@ -210,10 +154,8 @@ class Network:
         self.start_zone = zone
 
     def set_end(self, zone: Zone) -> None:
-        """Designate a zone as the network's end (destination) zone.
-
-        Args:
-            zone (Zone): Zone to mark as the end.
+        """
+        Designate a zone as the network's end zone.
 
         Raises:
             ValueError: If an end zone has already been set.

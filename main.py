@@ -19,7 +19,7 @@ if network.start_zone is None or network.end_zone is None:
 
 pathfinder = PathFinder()
 simulator = Simulator(network, pathfinder)
-turns = simulator.run_simulation(visual_mode=True)
+turns = simulator.run_simulation(visual_mode=False)
 
 visualizer = Visualizer(network, simulator.turn_history)
 
