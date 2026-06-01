@@ -2,6 +2,7 @@ import pygame
 import pygame.gfxdraw
 from typing import Dict, List, Tuple
 from parser import Network
+from simulator.simulation import TurnState
 
 
 WHITE = (255, 255, 255)
@@ -24,7 +25,9 @@ ZONE_COLORS = {
 class Visualizer:
     """Interactive pygame-based visualiser for the drone routing simulation."""
 
-    def __init__(self, network: Network, turn_history: List[Dict]) -> None:
+    def __init__(
+        self, network: Network, turn_history: List[TurnState]
+    ) -> None:
         """Initialise the visualiser window and pre compute zone positions."""
         pygame.init()
         self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -100,11 +103,10 @@ class Visualizer:
                 shifted_x = zone.x - min_x
                 shifted_y = zone.y - min_y
 
-                shifted_x = shifted_x * 1.0
                 if len(self.network.zones) > 30:
-                    shifted_y = shifted_y * 1.5
+                    shifted_y = int(shifted_y * 1.5)
                 else:
-                    shifted_y = shifted_y * 0.9
+                    shifted_y = int(shifted_y * 0.9)
 
                 spacing_multiplier = 1
                 shifted_x = shifted_x * spacing_multiplier
@@ -150,7 +152,8 @@ class Visualizer:
                     self.running = False
 
     def _draw_connections(self) -> None:
-        """Draw all network connections as grey lines between zone positions."""
+        """Draw all network connections as grey lines between zone
+        positions."""
         for connection in self.network.connection:
             zone1_name = connection.zone1.name
             zone2_name = connection.zone2.name
@@ -179,7 +182,8 @@ class Visualizer:
             self.screen.blit(text, text_rect)
 
     def _draw_drones(self) -> None:
-        """Draw all drones at their current positions for the displayed turn."""
+        """Draw all drones at their current positions for the displayed
+        turn."""
         if self.current_turn_index >= len(self.turn_history):
             return
 
@@ -214,7 +218,8 @@ class Visualizer:
         pygame.display.flip()
 
     def _show_instructions(self) -> None:
-        """Display a full-screen instructions overlay and wait for a keypress."""
+        """Display a full-screen instructions overlay and wait for a
+        keypress."""
         overlay = pygame.Surface((self.width, self.height))
         overlay.set_alpha(200)
         overlay.fill(BLACK)
