@@ -1,1 +1,4 @@
-venv/
+env
+maps
+__pycache__
+.mypy_cache/

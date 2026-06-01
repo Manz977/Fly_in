@@ -4,6 +4,14 @@ from algorithm.algorithm import PathFinder
 from pathlib import Path
 from simulator import Simulator
 from visual import Visualizer
+"""
+Entry point for the Fly_in pathfinding simulation.
+
+Parses a map file defaulting to maps/hard/03_ultimate_challenge.txt if no
+argument is provided, runs the pathfinding simulation, then launches the
+visual playback. Prints the total number of turns on exit.
+
+"""
 
 if len(sys.argv) > 1:
     path_to_the_file = Path(sys.argv[1])
