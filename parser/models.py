@@ -1,13 +1,14 @@
 from typing import List, Optional
 
+
 class Zone:
     """
     A node in the drone delivery network (called a hub).
 
     Attributes:
-        name (str): Unique identifier for the zone.
-        x: X coordinate used for layout and visualisation.
-        y: Y coordinate used for layout and visualisation.
+        name: Unique identifier for the zone.
+        x: x coordinate used for layout and visualisation.
+        y: y coordinate used for layout and visualisation.
     """
 
     def __init__(
@@ -60,7 +61,7 @@ class Connection:
             zone1: First endpoint zone.
             zone2: Second endpoint zone.
             max_link_capacity: Maximum number of drones
-                allowed to use this link per turn. Must be greater then 1.
+                allowed to use this link per turn. Must be more then 1.
         """
         if max_link_capacity < 1:
             raise ValueError(
@@ -76,7 +77,7 @@ def same_connection(a: Connection, b: Connection) -> bool:
     """
     Return whether two connections link the same pair of zones.
 
-    The check is order-independent: a connection from zone A to zone B is
+    The check is order independent: a connection from zone A to zone B is
     considered the same as one from zone B to zone A.
 
     """
@@ -87,16 +88,16 @@ class Network:
     """The drone delivery network graph, composed of zones and connections.
 
     The network is stored internally as both a flat zone/connection registry
-    and an adjacency list to support efficient neighbour look-ups.
+    and an adjacency list to support efficient neighbour look ups.
 
     Attributes:
-        nb_drones (int): Total number of drones operating in this network.
-        zones (dict[str, Zone]): Mapping of zone name → ``Zone`` object.
-        connection (list[Connection]): All connections in the network.
-        adj_list (dict[str, list[Zone]]): Adjacency list mapping each zone
+        nb_drones: Total number of drones operating in this network.
+        zones: Mapping of zone name.
+        connection: All connections in the network.
+        adj_list: Adjacency list mapping each zone
             name to its directly connected neighbour zones.
-        start_zone (Optional[Zone]): The zone from which all drones depart.
-        end_zone (Optional[Zone]): The zone all drones are trying to reach.
+        start_zone: The zone from which all drones depart.
+        end_zone: The zone all drones are trying to reach.
     """
 
     def __init__(self, nb_drones: int) -> None:
@@ -106,8 +107,8 @@ class Network:
         if nb_drones < 1:
             raise ValueError("Number of drones should be a positive number")
         self.nb_drones = nb_drones
-        self.zones = {}
-        self.connection = []
+        self.zones: dict[str, Zone] = {}
+        self.connection: list[Connection] = []
         self.adj_list: dict[str, list[Zone]] = {}
         self.start_zone: Optional[Zone] = None
         self.end_zone: Optional[Zone] = None
@@ -129,7 +130,7 @@ class Network:
         Register a connection and update the adjacency list for both endpoints.
 
         Raises:
-            ValueError: If an identical connection (same pair of zones)
+            ValueError: If an identical connection
                 already exists in the network.
         """
         for existing_conn in self.connection:

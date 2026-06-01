@@ -21,7 +21,7 @@ class MapParser:
         """Initialise the parser with the path to a map file.
 
         Args:
-            path (Path): Path to the ``.txt`` map file to parse.
+            path: Path to the .txt map file to parse.
         """
         self.path = path
         self.network: Optional[Network] = None
@@ -44,7 +44,7 @@ class MapParser:
     def _parse_hub(
         self, hub_type: str, stripped_line: str, line_num: int
     ) -> None:
-        """ Parse a single hub line and register the resulting zone. """
+        """ Parse a single hub line and register the resulting zone."""
         pattern = (
             rf"{hub_type}:\s+(\w+)\s+(-?\d+)\s+(-?\d+)\s*(?:\[([^\]]*)\])?"
             )
@@ -122,7 +122,6 @@ class MapParser:
                 stripped = line.strip()
                 if not stripped:
                     continue
-                # Some map files prefix start_hub with '#' as a visual marker.
                 if stripped.startswith("#start_hub:"):
                     stripped = stripped[1:]
                 elif stripped.startswith("#"):
