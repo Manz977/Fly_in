@@ -16,7 +16,7 @@ class PathFinder:
     ) -> List[str]:
         """Find the shortest lowest cost path between two zones.
 
-        Applies Dijkstra's algorithm over the network graph.  Edge cost is
+        Applies Dijkstra's algorithm over the network graph. Edge cost is
         determined solely by the destination zone type.
 
         """
@@ -76,8 +76,8 @@ class PathFinder:
                 f"No path exists from {start.name} to {end.name}"
             )
 
-        path = []
-        current = end.name
+        path: list[str] = []
+        current: str | None = end.name
         while current is not None:
             path.append(current)
             current = parent[current]
