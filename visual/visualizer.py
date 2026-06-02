@@ -106,7 +106,7 @@ class Visualizer:
                 if len(self.network.zones) > 30:
                     shifted_y = int(shifted_y * 1.5)
                 else:
-                    shifted_y = int(shifted_y * 0.9)
+                    shifted_y = int(shifted_y * 1.2)
 
                 spacing_multiplier = 1
                 shifted_x = shifted_x * spacing_multiplier
@@ -167,7 +167,17 @@ class Visualizer:
         """Draw all zones as anti aliased filled circles with name labels."""
         for zone_name, zone in self.network.zones.items():
             pos = self.zone_positions[zone_name]
-            color = ZONE_COLORS.get(zone.zone_type, BLUE)
+
+            color = None
+            if zone.color and zone.color.lower() != "none":
+                try:
+                    pygame_color = pygame.Color(zone.color)
+                    color = (pygame_color.r, pygame_color.g, pygame_color.b)
+                except ValueError:
+                    color = None
+
+            if color is None:
+                color = ZONE_COLORS.get(zone.zone_type, BLUE)
 
             pygame.gfxdraw.filled_circle(
                 self.screen, pos[0], pos[1], self.zone_radius, color
@@ -192,7 +202,7 @@ class Visualizer:
 
         for drone_id, zone_name in drone_positions.items():
             zone_pos = self.zone_positions[zone_name]
-            pygame.draw.circle(self.screen, RED, zone_pos, 15)
+            pygame.draw.circle(self.screen, BLACK, zone_pos, 15)
 
             text = self.small_font.render(f"D{drone_id}", True, WHITE)
             text_rect = text.get_rect(center=zone_pos)
